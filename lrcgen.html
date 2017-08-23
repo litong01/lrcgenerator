@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+<title>Lyrics lrc generator</title>
+<body>
+<h4>LRC Generator</h4>
+<embed type="application/x-vlc-plugin" pluginspage="http://www.videolan.org"
+       width="540" height="30" id="vlc" controls="true" autostart="false"
+       allowfullscreen="false" branding="true" bgcolor="#131313" />
+<br/>
+<div>
+<input type=text id="songname" size="70" />&nbsp;
+<input type=button value="start" onclick='doNew();' /><br/><br/>
+<input type=button id="btn_play" value=" play " onClick='doPlay();' />
+<input type=button value="lyrics" onClick='doLyrics();' />
+<input type=button value="mute" onclick=' vlc.audio.togglemute();' />
+<input type=button value="volume-" onclick='updateVolume(-10)' />
+<input type=button value="volume+" onclick='updateVolume(+10)' />
+</div>
+  <br/>
+  <textarea id="lyrics" rows="28" cols="60"></textarea> 
+  <script type="text/javascript">
+    var vlc = document.getElementById("vlc");
+    var itemID = "";
+    var thepath = "";
+
+    function updateVolume(deltaVol) {
+      vlc.audio.volume += deltaVol;
+    }
+
+    function doPlay() {
+      if ( vlc.playlist.isPlaying ) {
+        vlc.playlist.pause();
+        document.getElementById("btn_play").value = "play ";
+      } else {
+        vlc.playlist.play()
+        document.getElementById("btn_play").value = "pause";
+      }
+    }
+
+    function doLyrics() {
+      var mark = vlc.input.time;
+      var m_v = Math.floor(mark/60000).toFixed(0);
+      m_v = (m_v>9)?m_v:'0'+m_v;
+      var s_v = (mark/1000%60).toLocaleString('en-US',
+         {minimumIntegerDigits:2, maximumFractionDigits:2, useGrouping:false});
+      llc = document.getElementById("lyrics");
+      new_pos = llc.selectionStart;
+      llc.value = llc.value.substr(0,new_pos) + "[" + m_v + ":" + s_v + "]" + llc.value.substr(new_pos);
+      llc.selectionStart = llc.value.indexOf('\n', new_pos+8)+1;
+      while (llc.value.substr(llc.selectionStart, 1) == '[') {
+        llc.selectionStart = llc.value.indexOf(']', llc.selectionStart) + 1;
+      }
+    }
+
+    function doNew() {
+      newfile = document.getElementById("songname").value;
+      vlc.playlist.items.clear();
+      itemId=vlc.playlist.add(newfile);
+      pos0 = newfile.lastIndexOf('/');
+      pos1 = newfile.lastIndexOf('.');
+      llc = document.getElementById("lyrics");
+      llc.value = '[ti:' + newfile.substr(pos0+1, pos1-pos0-1) + ']\n' + llc.value;
+      llc.selectionStart = llc.value.indexOf('\n', 5)+1;
+      doPlay();
+    }
+  </script>
+</body>
+</html>
