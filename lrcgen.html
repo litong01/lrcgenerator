@@ -2,17 +2,54 @@
 <html>
 <head>
   <title>Lyrics lrc generator</title>
+  <meta charset="UTF-8">
   <style>
+  .timeMarker {
+    font-weight: bold;
+    font-size: large;
+    font-family: Verdana;
+    border: 0px;
+    background-color: white;
+  }
+
   .buttonLyrics {
-    font-wight: bold;
+    font-weight: bold;
     font-size: large;
     font-family: Verdana;
   }
 
   .buttonNormal {
-    font-wight: normal;
-    font-size: medium;
-    font-family: Verdana;
+   border-top: 1px solid #96d1f8;
+   background: #65a9d7;
+   background: -webkit-gradient(linear, left top, left bottom, from(#3e779d), to(#65a9d7));
+   background: -webkit-linear-gradient(top, #3e779d, #65a9d7);
+   background: -moz-linear-gradient(top, #3e779d, #65a9d7);
+   background: -ms-linear-gradient(top, #3e779d, #65a9d7);
+   background: -o-linear-gradient(top, #3e779d, #65a9d7);
+   padding: 4px 4px;
+   -webkit-border-radius: 8px;
+   -moz-border-radius: 8px;
+   border-radius: 8px;
+   -webkit-box-shadow: rgba(0,0,0,1) 0 1px 0;
+   -moz-box-shadow: rgba(0,0,0,1) 0 1px 0;
+   box-shadow: rgba(0,0,0,1) 0 1px 0;
+   text-shadow: rgba(0,0,0,.4) 0 1px 0;
+   color: white;
+   font-size: 14px;
+   font-family: Georgia, serif;
+   text-decoration: none;
+   vertical-align: middle;
+   height: 24px;
+   width: 120px;
+  }
+  .buttonNormal:hover {
+   border-top-color: #28597a;
+   background: #28597a;
+   color: #ccc;
+  }
+  .buttonNormal:active {
+   border-top-color: #1b435e;
+   background: #1b435e;
   }
 
   .inputText {
@@ -31,64 +68,52 @@
   </style>
   <script type="text/javascript">
     function format_time(s) {
-      s = s / 1000;
-      var hours = Math.floor(s / 3600);
+      s = s.toFixed(2)
       var minutes = Math.floor((s / 60) % 60);
       var seconds = Math.floor(s % 60);
-      hours = hours < 10 ? "0" + hours : hours;
-      minutes = minutes < 10 ? "0" + minutes : minutes;
-      seconds = seconds < 10 ? "0" + seconds : seconds;
-      return minutes + ":" + seconds;
+      var milliseconds = Math.floor((s % 1) * 100).toString().padEnd(2, "0")
+      minutes = minutes.toString().padStart(2, "0")
+      seconds = seconds.toString().padStart(2, "0")
+      return minutes + ":" + seconds + "." + milliseconds;
     }
 
     function getVLC() {
       return document.getElementById("vlc");
     }
-
-    function registerVLCEvent(event, handler) {
+    
+    function toggleMute() {
       var vlc = getVLC();
-      if (vlc) {
-        vlc.addEventListener(event, handler, false);
+      if (vlc.muted) {
+        vlc.muted = false;
+        document.getElementById("mute").value = "Mute";
+      } else {
+        vlc.muted = true;
+        document.getElementById("mute").value = "Unmute";
       }
-    }
-
-    function unregisterVLCEvent(event, handler) {
-      var vlc = getVLC();
-      if (vlc) {
-        vlc.removeEventListener(event, handler, false);
-      }
-    }
-
-    function handle_MediaPlayerTimeChange(val){
-      document.getElementById('timemark').value = "" + format_time(val);
     }
 
     function updateVolume(deltaVol) {
       var vlc = getVLC();
-      vlc.audio.volume += deltaVol;
+      vlc.volume += deltaVol;
     }
 
     function doPlay() {
       var vlc = getVLC();
-      if ( vlc.playlist.isPlaying ) {
-        vlc.playlist.pause();
-        document.getElementById("btn_play").value = "play ";
+      if ( vlc.paused ) {
+        vlc.play();
+        document.getElementById("btn_play").value = "Pause";
       } else {
-        vlc.playlist.play()
-        document.getElementById("btn_play").value = "pause";
+        vlc.pause()
+        document.getElementById("btn_play").value = "Play";
       }
     }
 
     function doLyrics() {
       var vlc = getVLC();
-      var mark = vlc.input.time;
-      var m_v = Math.floor(mark/60000).toFixed(0);
-      m_v = (m_v>9)?m_v:'0'+m_v;
-      var s_v = (mark/1000%60).toLocaleString('en-US',
-         {minimumIntegerDigits:2, maximumFractionDigits:2, useGrouping:false});
+      var mv = "["+format_time(vlc.currentTime) + "]"
       var llc = document.getElementById("lyrics");
       var new_pos = llc.selectionStart;
-      llc.value = llc.value.substr(0,new_pos) + "[" + m_v + ":" + s_v + "]" + llc.value.substr(new_pos);
+      llc.value = llc.value.substr(0,new_pos) + mv + llc.value.substr(new_pos);
       llc.selectionStart = llc.value.indexOf('\n', new_pos+8)+1;
       while (llc.value.substr(llc.selectionStart, 1) == '[') {
         llc.selectionStart = llc.value.indexOf(']', llc.selectionStart) + 1;
@@ -99,8 +124,8 @@
     function doNew() {
       var vlc = getVLC();
       var newfile = document.getElementById("songname").value;
-      vlc.playlist.items.clear();
-      var itemId=vlc.playlist.add(newfile);
+      vlc.src = newfile
+      vlc.load()
       pos0 = newfile.lastIndexOf('/');
       pos1 = newfile.lastIndexOf('.');
       llc = document.getElementById("lyrics");
@@ -111,7 +136,10 @@
     }
 
     function doStart() {
-      registerVLCEvent("MediaPlayerTimeChanged", handle_MediaPlayerTimeChange);
+      var vlc = getVLC();
+      vlc.ontimeupdate = function() {
+        document.getElementById('timemark').value = format_time(vlc.currentTime);
+      }
     }
 
     var helpMsg = "Copy a song's text lyrics in the lyric box, copy song url" +
@@ -126,30 +154,28 @@
 </head>
 <body onload="doStart();">
 <table cellpadding="4" cellspacing="0" style="table-layout:fixed; overflow:hidden">
-<col width="100px" />
-<col width="40px" />
 <tr><td colspan="2" align="center">
 LRC Generator
 </td></tr>
 <tr><td colspan="2">
-<embed type="application/x-vlc-plugin" pluginspage="http://www.videolan.org"
-       width="540" height="30" id="vlc" controls="true" autostart="false"
-       allowfullscreen="false" branding="true" />
+<audio id="vlc" style="width:600px;height:30" controls="controls" autostart="false"
+       allowfullscreen="false" branding="true" >
+</audio>
 </td></tr>
 <tr><td>
-<span class="buttonNormal">link:&nbsp;</span><input type=text id="songname" size="50" class="inputText"/>
+<span class="label">link:&nbsp;</span><input type=text id="songname" size="50" class="inputText"/>
 </td><td align="right">
 <input type=button value="start" onclick='doNew();' class="buttonLyrics" />
 </td></tr>
 <tr><td colspan="2">
-<input type=button id="btn_play" value=" play " onClick='doPlay();' class="buttonNormal" />
-<input type=button value="mute" onclick=' vlc.audio.togglemute();' class="buttonNormal" />
-<input type=button value="volume-" onclick='updateVolume(-10);' class="buttonNormal" />
-<input type=button value="volume+" onclick='updateVolume(+10);' class="buttonNormal" />
-<input type=button value="help" onclick='doHelp();' class="buttonNormal" />
+  <input type=button id="btn_play" value=" play " onClick='doPlay();' class="buttonNormal" />
+  <input type=button id="mute" value="mute" onclick='toggleMute();' class="buttonNormal" />
+  <input type=button value="volume-" onclick='updateVolume(-0.1);' class="buttonNormal" />
+  <input type=button value="volume+" onclick='updateVolume(+0.1);' class="buttonNormal" />
+  <input type=button value="help" onclick='doHelp();' class="buttonNormal" />
 </td></tr>
 <tr><td>
-<span class="buttonNormal">current time:&nbsp;</span><input type=text id="timemark" value="0:0.0" disabled class="buttonNormal" />
+<span class="label">Time:&nbsp;</span><input type=text id="timemark" value="0:0.0" disabled class="timeMarker" />
 </td><td align="right">
 <input type=button value="lyrics" onClick='doLyrics();' class="buttonLyrics" />
 </td></tr>
