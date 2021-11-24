@@ -1,6 +1,12 @@
 # lrcgenerator
-html page to generate the LRC file
 
+
+### To run it on your web page
+
+https://litong01.github.io/lrcgenerator/lrcgen.html
+
+
+### To run lcrgenerator locally
 1. Download lrcgen.html.
 2. Open up the lrcgen.html file using your firefox browser.
 3. Place the full path of a mp3 file on your computer in the link box.
